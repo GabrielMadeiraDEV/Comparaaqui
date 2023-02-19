@@ -1,0 +1,10 @@
+body{
+    background-image: url("https://media.tenor.com/OekLrgEl4F8AAAAC/ordem-paranormal.gif");
+    display: flex;
+    background-size: 100%;
+    
+}
+card{
+    display: flex;
+    align-content: center;
+}
