@@ -11,13 +11,13 @@
     <nav class="navbar navbar-light bg-light">
         <a class="navbar-brand" href="#">Rastreamento de Preços</a>
         <form class="form-inline" action="{{ url_for('track_price') }}" method="post">
-            <input class="form-control mr-sm-2" type="search" placeholder="Nome do produto" aria-label="Search" name="product_name">
+            <input class="form-control mr-sm-2" type="search" placeholder="Nome do produto" aria-label="Search" name="product_asin" required>
             <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Buscar</button>
         </form>
     </nav>
     <div class="container">
-        {% if price %}
-            <p>Preço: {{ price }}</p>
+        {% if asin %}
+            <p>ASIN: {{ asin }}</p>
         {% endif %}
     </div>
 </body>
