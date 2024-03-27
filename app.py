@@ -1,61 +1,60 @@
-from flask import Flask, render_template, request as flask_request
+from flask import Flask, render_template, request
 import requests
-import time
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/track_price', methods=['POST'])
-def track_price():
-    product_asin = flask_request.form.get('product_asin')  # assumindo que você está recebendo o ASIN do formulário
-
-    if not product_asin:
-        return render_template('index.html', asin="Error: No product ASIN provided")
-
-    url = "https://price-analytics.p.rapidapi.com/search-by-term"
-    headers = {
-        "content-type": "application/x-www-form-urlencoded",
-        "X-RapidAPI-Host": "price-analytics.p.rapidapi.com",
-        "X-RapidAPI-Key": "099d3e35fdmshf5d7bec1f8d47f4p11d405jsne2b10d2b9df4"
-    }
-    payload = {
-        "source": "amazon",
-        "country": "de",
-        "key": "asin",
-        "values": product_asin
-    }
-
-    response = requests.post(url, data=payload, headers=headers)
-    data = response.json()
-
-    if 'job_id' in data:
-        job_id = data['job_id']
-
-        # Aqui você faria a segunda solicitação à API usando o 'job_id'
-        url = "https://price-analytics.p.rapidapi.com/poll-results"
-        payload = {"job_id": job_id}
-
-        # Poll the API until the job is finished
-        for _ in range(10):  # limit to 10 attempts
-            response = requests.get(url, params=payload, headers=headers)
-            data = response.json()
-
-            if data.get('status') == 'finished':
-                break
-
-            time.sleep(60)  # wait for 60 seconds before polling again
-
-        if 'results' in data:
-            asin = data['results']
-        else:
-            asin = "Error: 'results' not found in API response"
+def search_amazon(product):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"}
+    url = f"https://www.amazon.com/s?k={product}"
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+    price_element = soup.find("span", attrs={"class":'a-offscreen'})
+    if price_element is not None:
+        return price_element.string, url
     else:
-        asin = "Error: 'job_id' not found in API response"
+        return "Price not found", None
 
-    return render_template('index.html', asin=asin)
+def search_ebay(product):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"}
+    url = f"https://www.ebay.com/sch/i.html?_nkw={product}"
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+    price_element = soup.find("span", attrs={"class":'s-item__price'})
+    if price_element is not None:
+        return price_element.string, url
+    else:
+        return "Price not found", None
+
+def parse_price(price):
+    if price is None or price == "Price not found":
+        return None
+    return float(price.replace("$", "").replace(",", ""))
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        product = request.form.get('product')
+
+        # Pesquisa na Amazon e eBay
+        amazon_price, amazon_link = search_amazon(product)
+        ebay_price, ebay_link = search_ebay(product)
+
+        # Converte os preços para números
+        amazon_price = parse_price(amazon_price)
+        ebay_price = parse_price(ebay_price)
+
+        # Compara os preços e retorna o menor
+        if amazon_price is None:
+            return render_template('index.html', price=ebay_price, link=ebay_link)
+        elif ebay_price is None:
+            return render_template('index.html', price=amazon_price, link=amazon_link)
+        elif amazon_price < ebay_price:
+            return render_template('index.html', price=amazon_price, link=amazon_link)
+        else:
+            return render_template('index.html', price=ebay_price, link=ebay_link)
+
+    return render_template('index.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

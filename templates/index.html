@@ -1,24 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rastreamento de Preços</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Price Comparison</title>
 </head>
 <body>
-    <nav class="navbar navbar-light bg-light">
-        <a class="navbar-brand" href="#">Rastreamento de Preços</a>
-        <form class="form-inline" action="{{ url_for('track_price') }}" method="post">
-            <input class="form-control mr-sm-2" type="search" placeholder="Nome do produto" aria-label="Search" name="product_asin" required>
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Buscar</button>
-        </form>
-    </nav>
-    <div class="container">
-        {% if asin %}
-            <p>ASIN: {{ asin }}</p>
-        {% endif %}
-    </div>
+    <form method="POST">
+        <input type="text" name="product" required>
+        <input type="submit" value="Search">
+    </form>
+
+    {% if price %}
+        <p>Lowest price: {{ price }}</p>
+        <p><a href="{{ link }}">Link to product</a></p>
+    {% endif %}
 </body>
 </html>
